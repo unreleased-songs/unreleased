@@ -67,6 +67,11 @@
       text-decoration: underline;
     }
 
+    .download {
+      margin-right: 0.5rem;
+      cursor: pointer;
+    }
+
     .l p {
       opacity: 75%;
       margin: 1rem 0;
@@ -182,6 +187,7 @@
   <script>
     const downloadAll = document.getElementsByTagName('button')[0];
     const allUrls = document.querySelectorAll('li a');
+    const downloadAlbum = Array.from(document.getElementsByClassName('download'));
 
     downloadAll.onclick = async () => {
       if (downloadAll.disabled) return;
@@ -207,7 +213,35 @@
         downloadAll.disabled = false;
         downloadAll.innerText = 'Download all';
       }, 2500);
-    }
+    };
+
+    downloadAlbum.forEach(element => element.onclick = async () => {
+      if (downloadAll.disabled) return;
+      downloadAll.disabled = true;
+
+      let allUrls = element.parentElement.parentElement.querySelectorAll('li a');
+
+      const zip = new JSZip();
+
+      try {
+        for (let i = 0; i < allUrls.length; i++) {
+          element.innerText = 'downloading track ' + (i + 1) + '/' + allUrls.length;
+          const response = await fetch(allUrls[i].href);
+
+          zip.file(allUrls[i].dataset.downloadurl, await response.arrayBuffer());
+        }
+      } catch (e) {
+        alert('ERROR: Could not reach server. Is CORS configured?');
+      }
+
+      const file = await zip.generateAsync({ type: 'blob' });
+      saveAs(file, element.parentElement.parentElement.dataset.downloadurl + '.zip');
+
+      setTimeout(() => {
+        downloadAll.disabled = false;
+        element.innerText = 'download';
+      }, 2500);
+    });
   </script>
 </body>
 

@@ -27,7 +27,7 @@ for (const albumId in info.albums) {
 
   content += '<ul id="' + albumId + '" data-downloadurl="' + albumInfo.title + '">';
 
-  content += '<h2>' + albumInfo.title + '<a href="#' + albumId + '" class="show">show</a><a href="#" class="hide">hide</a></h2>'
+  content += '<h2>' + albumInfo.title + ' <a href="#' + albumId + '" class="show">show</a> <a href="#" class="hide">hide</a> <a class="download">download</a></h2>'
 
   const tracks = readdirSync(path).filter(name => ['mp3', 'm4a', 'wav', 'flac', 'ogg', 'aac'].includes(name.split('.').pop()));
 
@@ -35,8 +35,9 @@ for (const albumId in info.albums) {
     const tags = id3.read(readFileSync(join(path, file)));
 
     const name = file.split('.').slice(0, -1).join('.');
+    const downloadName = (tags.title ?? name) + '.' + file.split('.').slice(-1)[0];
 
-    content += '<li><a href="' + (info.url ?? './') + encodeURIComponent(info.albums[albumId]) + '/' + encodeURIComponent(file) + '" data-downloadurl="' + albumInfo.title + '/' + (tags.title ?? name) + '.' + file.split('.').slice(-1)[0] + '">';
+    content += '<li><a href="' + (info.url ?? './') + encodeURIComponent(info.albums[albumId]) + '/' + encodeURIComponent(file) + '" data-downloadurl="' + albumInfo.title + '/' + downloadName + '" download="' + downloadName + '">';
 
     content += '<h3>' + (tags.title ?? name) + '</h3>';
 
