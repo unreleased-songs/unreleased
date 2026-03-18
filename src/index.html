@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>__TITLE__</title>
+  <style>
+    html {
+      background-color: #222;
+      background-image: url('./image.jpg');
+      background-size: cover;
+      background-position: center;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      backdrop-filter: blur(2rem) brightness(75%);
+      min-height: 100vh;
+    }
+
+    main {
+      display: flex;
+      justify-content: center;
+      padding: 2rem;
+      gap: 4rem;
+      min-height: calc(100vh - 7rem);
+    }
+
+    footer {
+      text-align: center;
+      font-size: small;
+      opacity: 75%;
+    }
+
+    img {
+      border-radius: 1rem;
+    }
+
+    .l {
+      width: 20rem;
+      max-width: 100%;
+    }
+
+    .r {
+      width: 40rem;
+      max-width: 100%;
+    }
+
+    .l img {
+      width: 100%;
+    }
+
+    .l a,
+    footer a {
+      text-decoration: underline;
+    }
+
+    .l p {
+      opacity: 75%;
+      margin: 1rem 0;
+    }
+
+    ul {
+      background-color: #fff1;
+      list-style-type: none;
+      padding: 1rem;
+      border-radius: 0.5rem;
+    }
+
+    ul li,
+    ul:not(:target) .hide,
+    ul:target .show {
+      display: none;
+    }
+
+    ul:target li {
+      display: block;
+    }
+
+    li {
+      background-color: #0008;
+      margin: 0.5rem 0;
+      border-radius: 0.25rem;
+    }
+
+    li a {
+      display: flex;
+      flex-direction: column;
+      padding: 0.5rem;
+    }
+
+    li:last-child {
+      margin-bottom: 0;
+    }
+
+    h2 {
+      margin: 0;
+    }
+
+    h3 {
+      margin: 0;
+      font-weight: normal;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: inherit;
+    }
+
+    h2 a {
+      font-weight: normal;
+      font-size: medium;
+      text-decoration: underline;
+      float: right;
+    }
+
+    p {
+      margin: 0;
+      opacity: 50%;
+    }
+
+    button {
+      border: 0;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      width: 100%;
+      background-color: #373;
+      color: #fff;
+      font-size: large;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background-color: #333;
+      cursor: wait;
+    }
+
+    @media screen and (max-width: 800px) {
+      main {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <div class="l">
+      <img src="./image.jpg">
+      <p>__DESCRIPTION__</p>
+      <a href="__LINK__">__PRETTYLINK__</a>
+    </div>
+    <div class="r">
+      <h1>__TITLE__</h1>
+
+      <button>Download all</button>
+
+      __CONTENT__
+    </div>
+  </main>
+
+  <footer>powered by <a href="https://github.com/Le0X8/unreleased">[unreleased]</a></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2/dist/FileSaver.min.js"></script>
+
+  <script>
+    const downloadAll = document.getElementsByTagName('button')[0];
+    const allUrls = document.querySelectorAll('li a');
+
+    downloadAll.onclick = async () => {
+      if (downloadAll.disabled) return;
+      downloadAll.disabled = true;
+
+      const zip = new JSZip();
+
+      try {
+        for (let i = 0; i < allUrls.length; i++) {
+          downloadAll.innerText = 'downloading track ' + (i + 1) + '/' + allUrls.length;
+          const response = await fetch(allUrls[i].href);
+
+          zip.file(allUrls[i].dataset.downloadurl, await response.arrayBuffer());
+        }
+      } catch (e) {
+        alert('ERROR: Could not reach server. Is CORS configured?');
+      }
+
+      const file = await zip.generateAsync({ type: 'blob' });
+      saveAs(file, '__TITLE__.zip');
+
+      setTimeout(() => {
+        downloadAll.disabled = false;
+        downloadAll.innerText = 'Download all';
+      }, 2500);
+    }
+  </script>
+</body>
+
+</html>
