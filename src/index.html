@@ -117,6 +117,7 @@
     h3 {
       margin: 0;
       font-weight: normal;
+      overflow-wrap: anywhere;
     }
 
     a {
@@ -152,10 +153,117 @@
       cursor: wait;
     }
 
+    li.playing {
+      background-color: #373a;
+    }
+
+    body.player {
+      padding-bottom: 5rem;
+    }
+
+    #player {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: none;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      background-color: #111e;
+      backdrop-filter: blur(1rem);
+    }
+
+    body.player #player {
+      display: flex;
+    }
+
+    #player img {
+      width: 3rem;
+      height: 3rem;
+      object-fit: cover;
+      border-radius: 0.25rem;
+    }
+
+    #player .info {
+      width: 14rem;
+      min-width: 0;
+    }
+
+    #player h3,
+    #player p {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #player .controls {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    #player button {
+      width: 2.5rem;
+      height: 2.5rem;
+      padding: 0;
+      border-radius: 50%;
+      background-color: transparent;
+      font-size: medium;
+    }
+
+    #player button svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      fill: #fff;
+      vertical-align: middle;
+    }
+
+    #player button.play {
+      background-color: #373;
+    }
+
+    #player .seek {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: small;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #player input {
+      flex: 1;
+      accent-color: #373;
+    }
+
+    #player a {
+      font-size: small;
+      text-decoration: underline;
+    }
+
     @media screen and (max-width: 800px) {
       main {
         flex-direction: column;
         align-items: center;
+      }
+
+      body.player {
+        padding-bottom: 8rem;
+      }
+
+      #player {
+        flex-wrap: wrap;
+        gap: 0.5rem 1rem;
+      }
+
+      #player .info {
+        flex: 1;
+        width: auto;
+      }
+
+      #player .seek {
+        order: 1;
+        flex-basis: 100%;
       }
     }
   </style>
@@ -178,6 +286,26 @@
       __CONTENT__
     </div>
   </main>
+
+  <div id="player">
+    <img src="./image.jpg">
+    <div class="info">
+      <h3></h3>
+      <p></p>
+    </div>
+    <div class="controls">
+      <button class="prev" title="previous"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
+      <button class="play" title="play/pause"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+      <button class="next" title="next"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6z"/></svg></button>
+    </div>
+    <div class="seek">
+      <span class="time">0:00</span>
+      <input type="range" min="0" max="0" step="0.1" value="0">
+      <span class="duration">0:00</span>
+    </div>
+    <a class="save">download</a>
+    <audio preload="none"></audio>
+  </div>
 
   <footer>powered by <a href="https://github.com/Le0X8/unreleased">[unreleased]</a></footer>
 
@@ -242,6 +370,118 @@
         element.innerText = 'download';
       }, 2500);
     });
+
+    const player = document.getElementById('player');
+    const audio = player.getElementsByTagName('audio')[0];
+    const playButton = player.querySelector('.play');
+    const seek = player.getElementsByTagName('input')[0];
+    const saveButton = player.querySelector('.save');
+    const tracks = Array.from(allUrls);
+
+    const playIcon = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+    const pauseIcon = '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>';
+
+    let current = -1;
+    let seeking = false;
+
+    const formatTime = seconds => {
+      if (!isFinite(seconds)) return '0:00';
+      seconds = Math.floor(seconds);
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor(seconds / 60) % 60;
+      const s = String(seconds % 60).padStart(2, '0');
+      return h ? h + ':' + String(m).padStart(2, '0') + ':' + s : m + ':' + s;
+    };
+
+    const play = index => {
+      if (index < 0 || index >= tracks.length) return;
+
+      if (current >= 0) tracks[current].parentElement.classList.remove('playing');
+      current = index;
+
+      const track = tracks[index];
+      const title = track.getElementsByTagName('h3')[0].innerText;
+      const artist = track.getElementsByTagName('p')[0].innerText;
+      const album = track.closest('ul').dataset.downloadurl;
+
+      track.parentElement.classList.add('playing');
+      player.getElementsByTagName('h3')[0].innerText = title;
+      player.getElementsByTagName('p')[0].innerText = artist;
+      saveButton.href = track.href;
+      saveButton.download = track.download;
+
+      document.body.classList.add('player');
+      document.title = title + ' - __TITLE__';
+
+      seek.value = 0;
+      seek.max = 0;
+      audio.src = track.href;
+      audio.play();
+
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title,
+          artist,
+          album,
+          artwork: [{ src: new URL('./image.jpg', location.href).href }],
+        });
+      }
+    };
+
+    const toggle = () => {
+      if (current < 0) return play(0);
+      audio.paused ? audio.play() : audio.pause();
+    };
+
+    tracks.forEach((track, index) => track.onclick = e => {
+      if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+      e.preventDefault();
+      index === current ? toggle() : play(index);
+    });
+
+    playButton.onclick = toggle;
+    player.querySelector('.prev').onclick = () => audio.currentTime > 3 ? audio.currentTime = 0 : play(current - 1);
+    player.querySelector('.next').onclick = () => play(current + 1);
+
+    audio.onplay = () => playButton.innerHTML = pauseIcon;
+    audio.onpause = () => playButton.innerHTML = playIcon;
+    audio.onended = () => play(current + 1);
+    audio.onerror = () => {
+      if (audio.src) player.getElementsByTagName('p')[0].innerText = 'could not load this track';
+    };
+
+    audio.ondurationchange = () => {
+      seek.max = audio.duration || 0;
+      player.querySelector('.duration').innerText = formatTime(audio.duration);
+    };
+
+    audio.ontimeupdate = () => {
+      if (!seeking) seek.value = audio.currentTime;
+      player.querySelector('.time').innerText = formatTime(audio.currentTime);
+    };
+
+    seek.oninput = () => {
+      seeking = true;
+      player.querySelector('.time').innerText = formatTime(seek.value);
+    };
+
+    seek.onchange = () => {
+      audio.currentTime = seek.value;
+      seeking = false;
+    };
+
+    document.addEventListener('keydown', e => {
+      if (e.code !== 'Space' || current < 0 || ['INPUT', 'BUTTON'].includes(e.target.tagName)) return;
+      e.preventDefault();
+      toggle();
+    });
+
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('play', () => audio.play());
+      navigator.mediaSession.setActionHandler('pause', () => audio.pause());
+      navigator.mediaSession.setActionHandler('previoustrack', () => play(current - 1));
+      navigator.mediaSession.setActionHandler('nexttrack', () => play(current + 1));
+    }
   </script>
 </body>
 
